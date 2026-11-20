@@ -225,12 +225,79 @@ function renderHistory() {
 renderHistory();
 
 // ==================== 简历优化 ====================
+
+// ---- 文件上传解析（PDF / DOCX）----
+if (window.pdfjsLib) {
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+const uploadZone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+const fileInfo = document.getElementById('file-info');
+const expInput = document.getElementById('exp-input');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag');
+  if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => {
+  if (e.target.files.length > 0) handleFile(e.target.files[0]);
+});
+document.getElementById('file-remove').addEventListener('click', () => {
+  fileInfo.style.display = 'none';
+  fileInput.value = '';
+  expInput.value = '';
+});
+
+async function handleFile(file) {
+  const name = file.name.toLowerCase();
+  const isPdf = name.endsWith('.pdf');
+  const isDocx = name.endsWith('.docx');
+  if (!isPdf && !isDocx) { alert('仅支持 PDF 或 DOCX 格式'); return; }
+
+  // 显示 loading
+  const card = document.getElementById('resume-result-card');
+  card.innerHTML = '<div class="loading"><div class="spinner"></div>正在解析文件…</div>';
+  fileInfo.style.display = 'flex';
+  fileInfo.querySelector('.fname').textContent = file.name + '  解析中…';
+
+  try {
+    let text = '';
+    if (isPdf) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map(item => item.str).join(' ') + '\n';
+      }
+    } else {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await window.mammoth.extractRawText({ arrayBuffer });
+      text = result.value;
+    }
+    expInput.value = text.trim();
+    fileInfo.querySelector('.fname').textContent = file.name + '  ✓ 已解析';
+    card.innerHTML = `<div class="empty-state" style="padding:30px 20px;"><p>✓ 已从文件提取 ${text.length} 字，点击"优化分析"开始</p></div>`;
+  } catch (err) {
+    console.error(err);
+    card.innerHTML = `<div class="loading"><p style="color:var(--danger);">解析失败：${err.message}<br>请改用粘贴文本方式</p></div>`;
+    fileInfo.querySelector('.fname').textContent = file.name + '  解析失败';
+  }
+}
+
 document.getElementById('btn-sample-exp').onclick = () => {
   document.getElementById('exp-input').value = SAMPLE_EXP;
 };
 document.getElementById('btn-clear-exp').onclick = () => {
   document.getElementById('exp-input').value = '';
   document.getElementById('resume-jd-input').value = '';
+  fileInfo.style.display = 'none';
+  fileInput.value = '';
   document.getElementById('resume-result-card').innerHTML = '<div class="empty-state"><p>优化建议会显示在这里</p></div>';
 };
 

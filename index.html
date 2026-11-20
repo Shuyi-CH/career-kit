@@ -53,8 +53,18 @@
   <section id="tab-resume" class="tab-panel">
     <div class="grid">
       <div class="card input-card">
-        <h2>① 粘贴一条经历</h2>
-        <textarea id="exp-input" placeholder="例如：负责XX产品的需求分析，参与了用户调研，进行了产品设计..."></textarea>
+        <h2>① 导入或粘贴经历</h2>
+        <div class="upload-zone" id="upload-zone">
+          <div class="icon">📄</div>
+          <div class="text">点击或拖拽上传简历文件</div>
+          <div class="sub">支持 PDF / DOCX（仅本地解析，不上传服务器）</div>
+          <input type="file" id="file-input" accept=".pdf,.docx" style="display:none;">
+        </div>
+        <div id="file-info" style="display:none;" class="file-info">
+          <span class="fname"></span>
+          <button class="remove" id="file-remove" title="移除">×</button>
+        </div>
+        <textarea id="exp-input" placeholder="或者直接粘贴经历文本：负责XX产品的需求分析，参与了用户调研，进行了产品设计..."></textarea>
 
         <h3 style="margin-top:20px;">② 可选：粘贴目标 JD（用于 ATS 关键词对照）</h3>
         <textarea id="resume-jd-input" placeholder="可选，粘贴目标岗位 JD，系统会检查你的经历覆盖了多少 JD 关键词" style="min-height:100px;"></textarea>
@@ -118,6 +128,8 @@
   </div>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="js/competency-model.js"></script>
 <script src="js/scoring-engine.js"></script>
 <script src="js/resume-optimizer.js"></script>
