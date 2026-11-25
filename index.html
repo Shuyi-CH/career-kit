@@ -3,14 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>求职决策套件 | 岗位评分 + 简历优化</title>
+<title>JD Lens · 岗位 JD 匹配分析与简历优化</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <header class="site-header">
   <div class="container">
-    <h1>求职决策套件</h1>
-    <p class="subtitle">岗位胜任力评分 · 简历内容优化 · 基于 54 份头部 AI PM JD 的胜任力模型</p>
+    <h1>JD Lens</h1>
+    <p class="subtitle">Read the JD. See the fit.</p>
+    <p class="subtitle-sub">岗位 JD 匹配分析与简历优化 · 纯前端本地运行</p>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="scoring">岗位评分</button>
       <button class="tab-btn" data-tab="resume">简历优化</button>
@@ -62,6 +63,7 @@
           <div class="sub">支持 PDF / DOCX（仅本地解析，不上传服务器）</div>
           <input type="file" id="file-input" accept=".pdf,.docx" style="display:none;">
         </div>
+        <p class="hint">暂不支持扫描件、手机拍照生成的图片型 PDF（无文本层）；本地 OCR 已列入 v2 路线图</p>
         <div id="file-info" style="display:none;" class="file-info">
           <span class="fname"></span>
           <button class="remove" id="file-remove" title="移除">×</button>
@@ -117,7 +119,7 @@
       <ul>
         <li><strong>v1（当前）</strong>：规则引擎评分 + 简历优化 + 30 份 JD 评测</li>
         <li><strong>v1.5</strong>：接入 RAG 语义检索层（Transformers.js 浏览器端 embedding），处理同义改写，对比评测召回率提升</li>
-        <li><strong>v2</strong>：接 LLM 做简历自由改写、自由格式 JD 语义理解</li>
+        <li><strong>v2</strong>：扫描件/图片型 PDF 的本地 OCR 识别（Tesseract.js，继续保持纯前端零后端）；接入 LLM 做简历自由改写、自由格式 JD 语义理解</li>
       </ul>
     </div>
   </section>
@@ -126,7 +128,7 @@
 
 <footer class="site-footer">
   <div class="container">
-    <p>求职决策套件 · 纯前端本地运行，数据不离开浏览器 · v1.0</p>
+    <p>JD Lens · 纯前端本地运行，数据不离开浏览器 · v1.1</p>
   </div>
 </footer>
 

@@ -1,5 +1,5 @@
 /**
- * 求职决策套件 - 主应用逻辑
+ * JD Lens - 主应用逻辑
  */
 
 // ==================== Tab 切换 ====================
@@ -288,9 +288,24 @@ async function handleFile(file) {
       const result = await window.mammoth.extractRawText({ arrayBuffer });
       text = result.value;
     }
-    expInput.value = text.trim();
+    const cleanText = text.trim();
+    if (!cleanText) {
+      // 常见于扫描件/手机拍照生成的图片型 PDF：无文本层，任何文本提取工具都无法直接读取
+      fileInfo.querySelector('.fname').textContent = file.name + '  未提取到文字';
+      card.innerHTML = `
+        <div class="empty-state" style="padding:28px 20px;text-align:left;">
+          <p style="color:var(--text-2);font-weight:500;">未从该文件中提取到文字</p>
+          <p class="hint" style="margin-top:8px;line-height:1.7;">
+            如果是扫描件或手机拍照生成的图片型 PDF，其中没有文本层，任何同类工具都无法直接提取文字。<br>
+            请改用可复制文字的 PDF / DOCX，或直接在下方输入框粘贴经历文本。<br>
+            本地 OCR 图片识别已列入 v2 路线图（Tesseract.js，保持纯前端运行）。
+          </p>
+        </div>`;
+      return;
+    }
+    expInput.value = cleanText;
     fileInfo.querySelector('.fname').textContent = file.name + '  ✓ 已解析';
-    card.innerHTML = `<div class="empty-state" style="padding:30px 20px;"><p>✓ 已从文件提取 ${text.length} 字，点击"优化分析"开始</p></div>`;
+    card.innerHTML = `<div class="empty-state" style="padding:30px 20px;"><p>✓ 已从文件提取 ${cleanText.length} 字，点击"优化分析"开始</p></div>`;
   } catch (err) {
     console.error(err);
     card.innerHTML = `<div class="loading"><p style="color:var(--danger);">解析失败：${err.message}<br>请改用粘贴文本方式</p></div>`;
