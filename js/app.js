@@ -17,9 +17,9 @@ function renderAboutModel() {
   const container = document.getElementById('about-model');
   const model = window.COMPETENCY_MODEL;
   const layers = {
-    general: { name: '通用产品层', weight: 0, color: '#3498db' },
-    business: { name: '商业与行业层', weight: 0, color: '#9b59b6' },
-    ai: { name: 'AI 专属层', weight: 0, color: '#e67e22' }
+    general: { name: '通用产品层', weight: 0, color: '#171717' },
+    business: { name: '商业与行业层', weight: 0, color: '#171717' },
+    ai: { name: 'AI 专属层', weight: 0, color: '#171717' }
   };
   let html = '';
   for (const [layerId, layer] of Object.entries(layers)) {
@@ -83,19 +83,19 @@ function renderScoringResult(result) {
     thtml += `<span class="tag">专业：${t.preferredMajor ? '偏好理工相关' : '请核实'}</span>`;
   }
   if (t.warnings.length > 0) {
-    thtml += '<div style="margin-top:6px;font-size:12px;">⚠️ ' + t.warnings.join('；') + '</div>';
+    thtml += '<div style="margin-top:6px;font-size:12px;">注意：' + t.warnings.join('；') + '</div>';
   }
   thtml += '</div>';
 
   // 综合分
-  const scoreColor = result.totalScore >= 70 ? '#27ae60' : result.totalScore >= 40 ? '#f39c12' : '#e74c3c';
+  const scoreColor = result.totalScore >= 70 ? '#16a34a' : result.totalScore >= 40 ? '#d97706' : '#dc2626';
   const circumference = 2 * Math.PI * 50;
   const offset = circumference - (result.totalScore / 100) * circumference;
   let html = thtml + `
     <div class="score-circle">
       <div class="score-ring">
         <svg width="120" height="120">
-          <circle cx="60" cy="60" r="50" stroke="#ecf0f1" stroke-width="10" fill="none"/>
+          <circle cx="60" cy="60" r="50" stroke="#e5e5e5" stroke-width="10" fill="none"/>
           <circle cx="60" cy="60" r="50" stroke="${scoreColor}" stroke-width="10" fill="none"
             stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round"/>
         </svg>
@@ -153,7 +153,7 @@ function drawRadar(scores) {
   const n = scores.length;
   ctx.clearRect(0, 0, 320, 300);
 
-  // 网格
+  // 网格（shadcn 中性发丝色）
   for (let level = 1; level <= 5; level++) {
     ctx.beginPath();
     for (let i = 0; i < n; i++) {
@@ -164,29 +164,28 @@ function drawRadar(scores) {
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.closePath();
-    ctx.strokeStyle = '#ecf0f1';
+    ctx.strokeStyle = '#e5e5e5';
     ctx.stroke();
   }
 
-  // 轴线 + 标签
-  const layerColors = { general: '#3498db', business: '#9b59b6', ai: '#e67e22' };
+  // 轴线 + 标签（统一中性灰，不再按层着色）
   for (let i = 0; i < n; i++) {
     const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
-    ctx.strokeStyle = '#ecf0f1';
+    ctx.strokeStyle = '#e5e5e5';
     ctx.stroke();
     const lx = cx + (r + 18) * Math.cos(angle);
     const ly = cy + (r + 18) * Math.sin(angle);
-    ctx.fillStyle = layerColors[scores[i].layer];
-    ctx.font = '11px sans-serif';
+    ctx.fillStyle = '#737373';
+    ctx.font = '600 11px ui-monospace, "SF Mono", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(scores[i].id, lx, ly);
   }
 
-  // 数据多边形
+  // 数据多边形（近黑单色 + 低透明填充）
   ctx.beginPath();
   for (let i = 0; i < n; i++) {
     const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
@@ -196,11 +195,20 @@ function drawRadar(scores) {
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.closePath();
-  ctx.fillStyle = 'rgba(45,90,142,0.2)';
+  ctx.fillStyle = 'rgba(23, 23, 23, 0.08)';
   ctx.fill();
-  ctx.strokeStyle = '#2d5a8e';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#171717';
+  ctx.lineWidth = 1.5;
   ctx.stroke();
+  // 数据点
+  ctx.fillStyle = '#171717';
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+    const rr = r * scores[i].score / 5;
+    ctx.beginPath();
+    ctx.arc(cx + rr * Math.cos(angle), cy + rr * Math.sin(angle), 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 // ==================== 本地历史 ====================
@@ -336,7 +344,7 @@ function renderResumeResult(r) {
 
   // 量化
   if (r.quant.needsQuant) {
-    html += '<div class="quant-warn">⚠️ 描述了成果但缺少量化数据，建议补充数字。可参考以下模板：</div>';
+    html += '<div class="quant-warn">提示：描述了成果但缺少量化数据，建议补充数字。可参考以下模板：</div>';
     html += '<ul class="quant-templates">';
     r.QUANT_TEMPLATES = window.ResumeOptimizer.QUANT_TEMPLATES;
     window.ResumeOptimizer.QUANT_TEMPLATES.forEach(t => html += `<li>${t}</li>`);
