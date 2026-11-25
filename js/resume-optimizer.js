@@ -90,7 +90,7 @@ const ResumeOptimizer = {
    */
   analyze(experience, targetJD = '') {
     if (!experience || experience.trim().length < 5) {
-      return { error: '请输入经历内容' };
+      return { errorCode: 'EXP_TOO_SHORT' };
     }
     const text = experience.trim();
     const star = this.checkSTAR(text);

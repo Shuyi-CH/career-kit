@@ -4,19 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JD Lens · 岗位 JD 匹配分析与简历优化</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <header class="site-header">
+  <div class="container header-inner">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>JD Lens</h1>
+        <p class="subtitle">Read the JD. See the fit.</p>
+      </div>
+    </div>
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn active" data-lang="zh">中文</button>
+      <button type="button" class="lang-btn" data-lang="en">EN</button>
+    </div>
+  </div>
   <div class="container">
-    <h1>JD Lens</h1>
-    <p class="subtitle">Read the JD. See the fit.</p>
-    <p class="subtitle-sub">岗位 JD 匹配分析与简历优化 · 纯前端本地运行</p>
     <nav class="tabs">
-      <button class="tab-btn active" data-tab="scoring">岗位评分</button>
-      <button class="tab-btn" data-tab="resume">简历优化</button>
-      <button class="tab-btn" data-tab="eval">评测报告</button>
-      <button class="tab-btn" data-tab="about">关于模型</button>
+      <button class="tab-btn active" data-tab="scoring" data-i18n="nav.scoring">岗位评分</button>
+      <button class="tab-btn" data-tab="resume" data-i18n="nav.resume">简历优化</button>
+      <button class="tab-btn" data-tab="eval" data-i18n="nav.eval">评测报告</button>
+      <button class="tab-btn" data-tab="about" data-i18n="nav.about">关于模型</button>
     </nav>
   </div>
 </header>
@@ -27,25 +42,28 @@
   <section id="tab-scoring" class="tab-panel active">
     <div class="grid">
       <div class="card input-card">
-        <h2>① 粘贴岗位 JD</h2>
-        <textarea id="jd-input" placeholder="把岗位描述（JD）完整粘贴到这里，包括职位要求、岗位职责、任职资格等..."></textarea>
+        <h2><span class="step-num">1</span><span data-i18n="scoring.title">粘贴岗位 JD</span></h2>
+        <textarea id="jd-input" data-i18n-placeholder="scoring.placeholder" placeholder="把岗位描述（JD）完整粘贴到这里，包括职位要求、岗位职责、任职资格等..."></textarea>
         <div class="actions">
-          <button id="btn-analyze" class="btn primary">开始分析</button>
-          <button id="btn-sample-jd" class="btn ghost">填入示例 JD</button>
-          <button id="btn-clear-jd" class="btn ghost">清空</button>
+          <button id="btn-analyze" class="btn primary" data-i18n="scoring.analyze">开始分析</button>
+          <button id="btn-sample-jd" class="btn ghost" data-i18n="scoring.sample">填入示例 JD</button>
+          <button id="btn-clear-jd" class="btn ghost" data-i18n="scoring.clear">清空</button>
         </div>
-        <p class="hint">建议粘贴 200 字以上完整 JD，分析结果更准确</p>
+        <p class="hint" data-i18n="scoring.hint">建议粘贴 200 字以上完整 JD，分析结果更准确</p>
       </div>
 
       <div class="card result-card" id="result-card">
         <div class="empty-state">
-          <p>分析结果会显示在这里</p>
+          <div class="empty-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+          </div>
+          <p data-i18n="scoring.empty">分析结果会显示在这里</p>
         </div>
       </div>
     </div>
 
     <div class="card history-card" id="history-card" style="display:none;">
-      <h3>最近分析记录（本地保存）</h3>
+      <h3 id="history-title" data-i18n="scoring.historyTitle">最近分析记录（本地保存）</h3>
       <div id="history-list"></div>
     </div>
   </section>
@@ -54,35 +72,38 @@
   <section id="tab-resume" class="tab-panel">
     <div class="grid">
       <div class="card input-card">
-        <h2>① 导入或粘贴经历</h2>
+        <h2><span class="step-num">1</span><span data-i18n="resume.title">导入或粘贴经历</span></h2>
         <div class="upload-zone" id="upload-zone">
           <div class="icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           </div>
-          <div class="text">点击或拖拽上传简历文件</div>
-          <div class="sub">支持 PDF / DOCX（仅本地解析，不上传服务器）</div>
+          <div class="text" data-i18n="resume.uploadText">点击或拖拽上传简历文件</div>
+          <div class="sub" data-i18n="resume.uploadSub">支持 PDF / DOCX</div>
           <input type="file" id="file-input" accept=".pdf,.docx" style="display:none;">
         </div>
-        <p class="hint">暂不支持扫描件、手机拍照生成的图片型 PDF（无文本层）；本地 OCR 已列入 v2 路线图</p>
+        <p class="hint" data-i18n="resume.uploadHint">暂不支持扫描件、手机拍照生成的图片型 PDF（无文本层）；本地 OCR 已列入 v2 路线图</p>
         <div id="file-info" style="display:none;" class="file-info">
           <span class="fname"></span>
           <button class="remove" id="file-remove" title="移除">×</button>
         </div>
-        <textarea id="exp-input" placeholder="或者直接粘贴经历文本：负责XX产品的需求分析，参与了用户调研，进行了产品设计..."></textarea>
+        <textarea id="exp-input" data-i18n-placeholder="resume.expPlaceholder" placeholder="或者直接粘贴经历文本：负责XX产品的需求分析，参与了用户调研，进行了产品设计..."></textarea>
 
-        <h3 style="margin-top:20px;">② 可选：粘贴目标 JD（用于 ATS 关键词对照）</h3>
-        <textarea id="resume-jd-input" placeholder="可选，粘贴目标岗位 JD，系统会检查你的经历覆盖了多少 JD 关键词" style="min-height:100px;"></textarea>
+        <h3 class="sub-heading" data-i18n="resume.jdTitle">可选：粘贴目标 JD（用于 ATS 关键词对照）</h3>
+        <textarea id="resume-jd-input" data-i18n-placeholder="resume.jdPlaceholder" placeholder="可选，粘贴目标岗位 JD，系统会检查你的经历覆盖了多少 JD 关键词" style="min-height:100px;"></textarea>
 
         <div class="actions">
-          <button id="btn-optimize" class="btn primary">优化分析</button>
-          <button id="btn-sample-exp" class="btn ghost">填入示例经历</button>
-          <button id="btn-clear-exp" class="btn ghost">清空</button>
+          <button id="btn-optimize" class="btn primary" data-i18n="resume.optimize">优化分析</button>
+          <button id="btn-sample-exp" class="btn ghost" data-i18n="resume.sample">填入示例经历</button>
+          <button id="btn-clear-exp" class="btn ghost" data-i18n="resume.clear">清空</button>
         </div>
       </div>
 
       <div class="card result-card" id="resume-result-card">
         <div class="empty-state">
-          <p>优化建议会显示在这里</p>
+          <div class="empty-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+          </div>
+          <p data-i18n="resume.empty">优化建议会显示在这里</p>
         </div>
       </div>
     </div>
@@ -91,13 +112,13 @@
   <!-- ============ 评测报告面板 ============ -->
   <section id="tab-eval" class="tab-panel">
     <div class="card">
-      <h2>模型评测报告</h2>
-      <p class="hint">基于内置 30 份公开 JD 测试集，人工标注核心能力项作为 ground truth，检验模型的召回率与评分一致性。</p>
+      <h2 data-i18n="eval.title">模型评测报告</h2>
+      <p class="hint eval-hint" data-i18n="eval.hint">基于内置 30 份公开 JD 测试集，人工标注核心能力项作为 ground truth，检验模型的召回率与评分一致性。</p>
       <div class="actions">
-        <button id="btn-run-eval" class="btn primary">运行评测</button>
+        <button id="btn-run-eval" class="btn primary" data-i18n="eval.run">运行评测</button>
       </div>
       <div id="eval-result" class="eval-result">
-        <p class="hint">点击"运行评测"查看结果</p>
+        <p class="hint" data-i18n="eval.initial">点击“运行评测”查看结果</p>
       </div>
     </div>
   </section>
@@ -105,21 +126,22 @@
   <!-- ============ 关于模型面板 ============ -->
   <section id="tab-about" class="tab-panel">
     <div class="card">
-      <h2>关于胜任力模型</h2>
-      <p>本工具的评分模型基于两份权威资料构建：</p>
-      <ul>
-        <li><strong>人人都是产品经理《54份头部企业 AI PM JD 分析》</strong>（字节、腾讯、蚂蚁、OpenAI、Anthropic 等 14 家）——提取通用能力 5 维度 + AI 专属能力 6 项</li>
-        <li><strong>TripAdvisor 产品胜任力框架（Ravi Mehta）</strong>——国际通行的 12 项 MECE 能力框架</li>
+      <h2 data-i18n="about.title">关于胜任力模型</h2>
+      <p data-i18n="about.intro">本工具的评分模型基于两份权威资料构建：</p>
+      <ul class="source-list">
+        <li data-i18n="about.source1">人人都是产品经理《54 份头部企业 AI PM JD 分析》（字节、腾讯、蚂蚁、OpenAI、Anthropic 等 14 家）——提取通用能力 5 维度 + AI 专属能力 6 项</li>
+        <li data-i18n="about.source2">TripAdvisor 产品胜任力框架（Ravi Mehta）——国际通行的 12 项 MECE 能力框架</li>
       </ul>
-      <h3>模型结构（9 项，3 层）</h3>
+      <h3 class="sub-heading" data-i18n="about.structure">模型结构（9 项，3 层）</h3>
       <div id="about-model"></div>
-      <h3>评分逻辑</h3>
-      <p>采用「关键词命中 + 强度词」两级判定：命中关键词决定基础分（1–3），伴随"独立/主导/深度/从0到1"等强度词则上浮（到 4–5）。每项分值乘以权重加权求和，得出 0–100 的综合匹配度。</p>
-      <h3>路线图</h3>
-      <ul>
-        <li><strong>v1（当前）</strong>：规则引擎评分 + 简历优化 + 30 份 JD 评测</li>
-        <li><strong>v1.5</strong>：接入 RAG 语义检索层（Transformers.js 浏览器端 embedding），处理同义改写，对比评测召回率提升</li>
-        <li><strong>v2</strong>：扫描件/图片型 PDF 的本地 OCR 识别（Tesseract.js，继续保持纯前端零后端）；接入 LLM 做简历自由改写、自由格式 JD 语义理解</li>
+      <p class="hint" id="about-cn-note"></p>
+      <h3 class="sub-heading" data-i18n="about.scoringTitle">评分逻辑</h3>
+      <p class="body-text" data-i18n="about.scoringText">采用「关键词命中 + 强度词」两级判定：命中关键词决定基础分（1–3），伴随“独立/主导/深度/从0到1”等强度词则上浮（到 4–5）。每项分值乘以权重加权求和，得出 0–100 的综合匹配度。</p>
+      <h3 class="sub-heading" data-i18n="about.roadmapTitle">路线图</h3>
+      <ul class="source-list">
+        <li data-i18n="about.v1">v1（当前）：规则引擎评分 + 简历优化 + 30 份 JD 评测</li>
+        <li data-i18n="about.v15">v1.5：接入 RAG 语义检索层（Transformers.js 浏览器端 embedding），处理同义改写，对比评测召回率提升</li>
+        <li data-i18n="about.v2">v2：扫描件/图片型 PDF 的浏览器本地 OCR 识别（Tesseract.js）；接入 LLM 做简历自由改写、自由格式 JD 语义理解</li>
       </ul>
     </div>
   </section>
@@ -128,12 +150,13 @@
 
 <footer class="site-footer">
   <div class="container">
-    <p>JD Lens · 纯前端本地运行，数据不离开浏览器 · v1.1</p>
+    <p data-i18n="footer">JD Lens · v1.2</p>
   </div>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/competency-model.js"></script>
 <script src="js/scoring-engine.js"></script>
 <script src="js/resume-optimizer.js"></script>

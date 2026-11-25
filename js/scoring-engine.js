@@ -15,7 +15,7 @@ const ScoringEngine = {
     const warnings = [];
 
     // 学历
-    let education = '未提及';
+    let education = 'none';
     for (const e of HARD_THRESHOLDS.education.patterns) {
       if (e.keywords.some(k => text.includes(k.toLowerCase()))) {
         education = e.level;
@@ -23,7 +23,7 @@ const ScoringEngine = {
       }
     }
     if (HARD_THRESHOLDS.education.warnIf(education)) {
-      warnings.push(`${education}学历要求较高，请确认自身条件`);
+      warnings.push({ code: 'EDU_HIGH', level: education });
     }
 
     // 专业
@@ -31,7 +31,7 @@ const ScoringEngine = {
     let preferredMajor = false;
     if (majorMentioned) {
       preferredMajor = HARD_THRESHOLDS.major.preferred.some(m => text.includes(m.toLowerCase()));
-      if (!preferredMajor) warnings.push('提到了专业要求但未明确偏好计算机/统计等相关专业，建议核实');
+      if (!preferredMajor) warnings.push({ code: 'MAJOR_UNCLEAR' });
     }
 
     // 工作年限
@@ -40,7 +40,7 @@ const ScoringEngine = {
     if (m) {
       years = parseInt(m[1], 10);
       if (HARD_THRESHOLDS.years.warnIf(years)) {
-        warnings.push(`要求${years}年以上经验，应届生可能不满足`);
+        warnings.push({ code: 'YEARS_HIGH', years });
       }
     }
 
@@ -94,7 +94,7 @@ const ScoringEngine = {
    */
   analyze(jdText) {
     if (!jdText || jdText.trim().length < 30) {
-      return { error: 'JD 内容过短，请粘贴完整岗位描述（建议200字以上）' };
+      return { errorCode: 'JD_TOO_SHORT' };
     }
 
     const text = jdText.trim();
@@ -125,7 +125,7 @@ const ScoringEngine = {
     const gaps = scores.filter(s => s.score <= 2).map(s => ({
       id: s.id,
       name: s.name,
-      reason: s.score === 1 ? 'JD未提及此项能力' : 'JD仅轻度提及'
+      reasonCode: s.score === 1 ? 'NOT_MENTIONED' : 'LIGHTLY_MENTIONED'
     }));
 
     // 强项：评分 >=4

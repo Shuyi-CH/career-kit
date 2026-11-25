@@ -1,5 +1,6 @@
 /**
  * JD Lens - 主应用逻辑
+ * 所有用户可见文案统一走 t()（i18n.js），本文件不硬编码界面字符串。
  */
 
 // ==================== Tab 切换 ====================
@@ -12,30 +13,45 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
+// 能力项 ID → 定义（用于取英文名等展示字段）
+const COMP_BY_ID = {};
+window.COMPETENCY_MODEL.COMPETENCIES.forEach(c => { COMP_BY_ID[c.id] = c; });
+function compName(id, fallbackZh) {
+  return window.getLang() === 'en' ? (COMP_BY_ID[id] && COMP_BY_ID[id].nameEn) || fallbackZh : fallbackZh;
+}
+function sep() { return window.getLang() === 'zh' ? '：' : ': '; }
+
+// 动态区域的最近一次数据，语言切换时用于重渲染
+let lastScoringResult = null;
+let lastResumeResult = null;
+let evalRan = false;
+
 // ==================== 渲染"关于模型" ====================
 function renderAboutModel() {
   const container = document.getElementById('about-model');
   const model = window.COMPETENCY_MODEL;
-  const layers = {
-    general: { name: '通用产品层', weight: 0, color: '#171717' },
-    business: { name: '商业与行业层', weight: 0, color: '#171717' },
-    ai: { name: 'AI 专属层', weight: 0, color: '#171717' }
-  };
+  const layerIds = ['general', 'business', 'ai'];
+  const kwLabel = window.t('about.keywords');
   let html = '';
-  for (const [layerId, layer] of Object.entries(layers)) {
+  for (const layerId of layerIds) {
     const comps = model.COMPETENCIES.filter(c => c.layer === layerId);
     const totalW = comps.reduce((s, c) => s + c.weight, 0);
-    html += `<div style="margin:12px 0;"><b style="color:${layer.color};">${layer.name}（${totalW}%）</b><ul style="margin:6px 0 0 20px;font-size:13px;">`;
+    const layerName = window.t('about.layer.' + layerId);
+    html += `<div style="margin:14px 0;"><b style="color:var(--text);">${layerName}（${totalW}%）</b><ul style="margin:8px 0 0 20px;font-size:13px;color:var(--text-2);line-height:1.9;">`;
     comps.forEach(c => {
-      html += `<li><b>${c.id}</b> ${c.name}（${c.weight}%）— 关键词：${c.keywords.slice(0,6).join('、')}${c.keywords.length>6?'…':''}</li>`;
+      const name = window.getLang() === 'en' ? c.nameEn : c.name;
+      const kws = c.keywords.slice(0, 6).join('、') + (c.keywords.length > 6 ? '…' : '');
+      html += `<li><b style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">${c.id}</b> ${name}（${c.weight}%）— ${kwLabel}：${kws}</li>`;
     });
     html += '</ul></div>';
   }
   container.innerHTML = html;
+  const cnNote = document.getElementById('about-cn-note');
+  if (cnNote) cnNote.textContent = window.t('about.cnNote');
 }
 renderAboutModel();
 
-// ==================== 示例数据 ====================
+// ==================== 示例数据（v1 引擎面向中文 JD，示例语料保持中文）====================
 const SAMPLE_JD = `AI产品经理-大模型应用方向
 岗位职责：
 1. 负责大模型在企业服务场景的产品设计与落地，从0到1搭建智能问答产品；
@@ -57,13 +73,16 @@ document.getElementById('btn-sample-jd').onclick = () => {
 };
 document.getElementById('btn-clear-jd').onclick = () => {
   document.getElementById('jd-input').value = '';
-  document.getElementById('result-card').innerHTML = '<div class="empty-state"><p>分析结果会显示在这里</p></div>';
+  lastScoringResult = null;
+  document.getElementById('result-card').innerHTML =
+    `<div class="empty-state"><p>${window.t('scoring.empty')}</p></div>`;
 };
 
 document.getElementById('btn-analyze').onclick = () => {
   const jd = document.getElementById('jd-input').value;
   const result = window.ScoringEngine.analyze(jd);
-  if (result.error) { alert(result.error); return; }
+  if (result.errorCode) { alert(window.t('error.' + result.errorCode)); return; }
+  lastScoringResult = result;
   renderScoringResult(result);
   saveHistory(jd, result);
   renderHistory();
@@ -71,19 +90,26 @@ document.getElementById('btn-analyze').onclick = () => {
 
 function renderScoringResult(result) {
   const card = document.getElementById('result-card');
-  const t = result.thresholds;
-  const warnClass = t.warnings.length > 0 ? 'warn' : '';
+  const th = result.thresholds;
+  const warnClass = th.warnings.length > 0 ? 'warn' : '';
+  const lang = window.getLang();
 
   // 硬门槛
   let thtml = `<div class="thresholds ${warnClass}">`;
-  thtml += `<span class="tag">学历：${t.education}</span>`;
-  thtml += `<span class="tag">年限：${t.years > 0 ? t.years + '年以上' : '未提及'}</span>`;
-  thtml += `<span class="tag">${t.isFresh ? '校招' : t.isExperienced ? '社招' : '未明确'}</span>`;
-  if (t.majorMentioned) {
-    thtml += `<span class="tag">专业：${t.preferredMajor ? '偏好理工相关' : '请核实'}</span>`;
+  const eduLabel = th.education === 'none'
+    ? window.t('scoring.notMentioned')
+    : window.t('edu.' + th.education);
+  thtml += `<span class="tag">${window.t('scoring.edu')}${sep()}${eduLabel}</span>`;
+  thtml += `<span class="tag">${window.t('scoring.years')}${sep()}${th.years > 0 ? window.t('scoring.yearsTag', { n: th.years }) : window.t('scoring.notMentioned')}</span>`;
+  const hireType = th.isFresh ? window.t('scoring.campus') : th.isExperienced ? window.t('scoring.social') : window.t('scoring.unspecified');
+  thtml += `<span class="tag">${hireType}</span>`;
+  if (th.majorMentioned) {
+    thtml += `<span class="tag">${window.t('scoring.major')}${sep()}${th.preferredMajor ? window.t('scoring.majorPreferred') : window.t('scoring.majorCheck')}</span>`;
   }
-  if (t.warnings.length > 0) {
-    thtml += '<div style="margin-top:6px;font-size:12px;">注意：' + t.warnings.join('；') + '</div>';
+  if (th.warnings.length > 0) {
+    const warnSep = lang === 'zh' ? '；' : '; ';
+    const warnText = th.warnings.map(w => window.t('warn.' + w.code, w)).join(warnSep);
+    thtml += `<div class="warn-text" style="margin-top:8px;font-size:12px;">${window.t('scoring.note')}${warnText}</div>`;
   }
   thtml += '</div>';
 
@@ -94,12 +120,13 @@ function renderScoringResult(result) {
   let html = thtml + `
     <div class="score-circle">
       <div class="score-ring">
-        <svg width="120" height="120">
-          <circle cx="60" cy="60" r="50" stroke="#e5e5e5" stroke-width="10" fill="none"/>
-          <circle cx="60" cy="60" r="50" stroke="${scoreColor}" stroke-width="10" fill="none"
-            stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round"/>
+        <svg width="132" height="132" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="50" stroke="#ececec" stroke-width="9" fill="none"/>
+          <circle cx="60" cy="60" r="50" stroke="${scoreColor}" stroke-width="9" fill="none"
+            stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round"
+            style="transition:stroke-dashoffset 0.6s cubic-bezier(0.22,1,0.36,1);"/>
         </svg>
-        <div class="score-num"><b>${result.totalScore}</b><span>综合匹配度</span></div>
+        <div class="score-num"><b>${result.totalScore}</b><span>${window.t('scoring.totalScore')}</span></div>
       </div>
     </div>
   `;
@@ -111,32 +138,36 @@ function renderScoringResult(result) {
   html += '<div class="competency-list">';
   result.scores.forEach(c => {
     const pct = (c.score / 5) * 100;
+    const name = compName(c.id, c.name);
     html += `<div class="comp-row layer-${c.layer}">
-      <span style="font-size:11px;color:#95a5a6;">${c.id}</span>
+      <span class="id-tag">${c.id}</span>
       <div>
-        <div style="font-size:12px;margin-bottom:3px;">${c.name} <span style="color:#95a5a6;font-size:11px;">(${c.weight}%)</span></div>
+        <div style="font-size:12.5px;margin-bottom:4px;color:var(--text-2);">${name} <span style="color:var(--text-3);font-size:11px;">(${c.weight}%)</span></div>
         <div class="bar-bg"><div class="bar-fill" style="width:${pct}%"></div></div>
       </div>
       <span class="score-badge">${c.score}/5</span>
-      <span style="font-size:10px;color:#95a5a6;">${c.hasIntensity?'★':''}</span>
+      <span style="font-size:10px;color:var(--text-3);">${c.hasIntensity ? '★' : ''}</span>
     </div>`;
     if (c.matchedSnippets.length > 0) {
-      html += `<div class="snippets">${c.matchedSnippets.slice(0,2).map(s => `<div class="snippet">…${s}…</div>`).join('')}</div>`;
+      html += `<div class="snippets">${c.matchedSnippets.slice(0, 2).map(s => `<div class="snippet">…${s}…</div>`).join('')}</div>`;
     }
   });
   html += '</div>';
 
   // 强项
   if (result.strengths.length > 0) {
-    html += '<div class="section-title">JD 明确要求的能力（强项）</div><div class="strength-list">';
-    result.strengths.forEach(s => html += `<div class="strength-item">✓ ${s.name}</div>`);
+    html += `<div class="section-title">${window.t('scoring.strengths')}</div><div class="strength-list">`;
+    result.strengths.forEach(s => html += `<div class="strength-item">✓ ${compName(s.id, s.name)}</div>`);
     html += '</div>';
   }
 
   // Gap 清单
   if (result.gaps.length > 0) {
-    html += '<div class="section-title">JD 未明显要求的能力（可能的 Gap）</div><div class="gap-list">';
-    result.gaps.forEach(g => html += `<div class="gap-item">! ${g.name}：${g.reason}</div>`);
+    html += `<div class="section-title">${window.t('scoring.gaps')}</div><div class="gap-list">`;
+    result.gaps.forEach(g => {
+      const reason = window.t('scoring.reason.' + g.reasonCode);
+      html += `<div class="gap-item">${compName(g.id, g.name)} — ${reason}</div>`;
+    });
     html += '</div>';
   }
 
@@ -153,7 +184,7 @@ function drawRadar(scores) {
   const n = scores.length;
   ctx.clearRect(0, 0, 320, 300);
 
-  // 网格（shadcn 中性发丝色）
+  // 网格（中性发丝色）
   for (let level = 1; level <= 5; level++) {
     ctx.beginPath();
     for (let i = 0; i < n; i++) {
@@ -164,22 +195,22 @@ function drawRadar(scores) {
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.closePath();
-    ctx.strokeStyle = '#e5e5e5';
+    ctx.strokeStyle = '#e7e7e7';
     ctx.stroke();
   }
 
-  // 轴线 + 标签（统一中性灰，不再按层着色）
+  // 轴线 + 标签
   for (let i = 0; i < n; i++) {
     const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
-    ctx.strokeStyle = '#e5e5e5';
+    ctx.strokeStyle = '#e7e7e7';
     ctx.stroke();
     const lx = cx + (r + 18) * Math.cos(angle);
     const ly = cy + (r + 18) * Math.sin(angle);
     ctx.fillStyle = '#737373';
-    ctx.font = '600 11px ui-monospace, "SF Mono", monospace';
+    ctx.font = '600 11px ui-monospace, "SF Mono", Menlo, monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(scores[i].id, lx, ly);
@@ -200,7 +231,6 @@ function drawRadar(scores) {
   ctx.strokeStyle = '#171717';
   ctx.lineWidth = 1.5;
   ctx.stroke();
-  // 数据点
   ctx.fillStyle = '#171717';
   for (let i = 0; i < n; i++) {
     const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
@@ -227,7 +257,7 @@ function renderHistory() {
   if (history.length === 0) { card.style.display = 'none'; return; }
   card.style.display = 'block';
   list.innerHTML = history.map(h =>
-    `<div class="history-item"><span>${h.jd}…</span><span class="score-mini">${h.score}分</span></div>`
+    `<div class="history-item"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.jd}…</span><span class="score-mini">${window.t('scoring.historyScore', { n: h.score })}</span></div>`
   ).join('');
 }
 renderHistory();
@@ -265,13 +295,13 @@ async function handleFile(file) {
   const name = file.name.toLowerCase();
   const isPdf = name.endsWith('.pdf');
   const isDocx = name.endsWith('.docx');
-  if (!isPdf && !isDocx) { alert('仅支持 PDF 或 DOCX 格式'); return; }
+  if (!isPdf && !isDocx) { alert(window.t('resume.formatAlert')); return; }
 
   // 显示 loading
   const card = document.getElementById('resume-result-card');
-  card.innerHTML = '<div class="loading"><div class="spinner"></div>正在解析文件…</div>';
+  card.innerHTML = `<div class="loading"><div class="spinner"></div>${window.t('resume.parsing')}</div>`;
   fileInfo.style.display = 'flex';
-  fileInfo.querySelector('.fname').textContent = file.name + '  解析中…';
+  fileInfo.querySelector('.fname').textContent = file.name + '  ' + window.t('resume.statusParsing');
 
   try {
     let text = '';
@@ -290,26 +320,26 @@ async function handleFile(file) {
     }
     const cleanText = text.trim();
     if (!cleanText) {
-      // 常见于扫描件/手机拍照生成的图片型 PDF：无文本层，任何文本提取工具都无法直接读取
-      fileInfo.querySelector('.fname').textContent = file.name + '  未提取到文字';
+      // 扫描件/手机拍照生成的图片型 PDF：无文本层，任何文本提取工具都无法直接读取
+      fileInfo.querySelector('.fname').textContent = file.name + '  ' + window.t('resume.statusNoText');
       card.innerHTML = `
-        <div class="empty-state" style="padding:28px 20px;text-align:left;">
-          <p style="color:var(--text-2);font-weight:500;">未从该文件中提取到文字</p>
-          <p class="hint" style="margin-top:8px;line-height:1.7;">
-            如果是扫描件或手机拍照生成的图片型 PDF，其中没有文本层，任何同类工具都无法直接提取文字。<br>
-            请改用可复制文字的 PDF / DOCX，或直接在下方输入框粘贴经历文本。<br>
-            本地 OCR 图片识别已列入 v2 路线图（Tesseract.js，保持纯前端运行）。
+        <div class="empty-state" style="padding:32px 20px;text-align:left;">
+          <p style="color:var(--text-2);font-weight:600;margin-bottom:10px;">${window.t('resume.noTextTitle')}</p>
+          <p class="hint" style="line-height:1.8;">
+            ${window.t('resume.noTextBody1')}<br>
+            ${window.t('resume.noTextBody2')}<br>
+            ${window.t('resume.noTextBody3')}
           </p>
         </div>`;
       return;
     }
     expInput.value = cleanText;
-    fileInfo.querySelector('.fname').textContent = file.name + '  ✓ 已解析';
-    card.innerHTML = `<div class="empty-state" style="padding:30px 20px;"><p>✓ 已从文件提取 ${cleanText.length} 字，点击"优化分析"开始</p></div>`;
+    fileInfo.querySelector('.fname').textContent = file.name + '  ' + window.t('resume.statusParsed');
+    card.innerHTML = `<div class="empty-state"><p>${window.t('resume.parsedOk', { n: cleanText.length })}</p></div>`;
   } catch (err) {
     console.error(err);
-    card.innerHTML = `<div class="loading"><p style="color:var(--danger);">解析失败：${err.message}<br>请改用粘贴文本方式</p></div>`;
-    fileInfo.querySelector('.fname').textContent = file.name + '  解析失败';
+    fileInfo.querySelector('.fname').textContent = file.name + '  ' + window.t('resume.statusFailed');
+    card.innerHTML = `<div class="loading"><p style="color:var(--danger);">${window.t('resume.parseFail', { msg: err.message })}</p></div>`;
   }
 }
 
@@ -319,16 +349,19 @@ document.getElementById('btn-sample-exp').onclick = () => {
 document.getElementById('btn-clear-exp').onclick = () => {
   document.getElementById('exp-input').value = '';
   document.getElementById('resume-jd-input').value = '';
+  lastResumeResult = null;
   fileInfo.style.display = 'none';
   fileInput.value = '';
-  document.getElementById('resume-result-card').innerHTML = '<div class="empty-state"><p>优化建议会显示在这里</p></div>';
+  document.getElementById('resume-result-card').innerHTML =
+    `<div class="empty-state"><p>${window.t('resume.empty')}</p></div>`;
 };
 
 document.getElementById('btn-optimize').onclick = () => {
   const exp = document.getElementById('exp-input').value;
   const jd = document.getElementById('resume-jd-input').value;
   const result = window.ResumeOptimizer.analyze(exp, jd);
-  if (result.error) { alert(result.error); return; }
+  if (result.errorCode) { alert(window.t('error.' + result.errorCode)); return; }
+  lastResumeResult = result;
   renderResumeResult(result);
 };
 
@@ -337,53 +370,65 @@ function renderResumeResult(r) {
   let html = '';
 
   // STAR 检测
-  html += '<div class="section-title">STAR 要素完整性：' + r.star.completeness + '%</div>';
+  html += `<div class="section-title">${window.t('resume.starTitle', { n: r.star.completeness })}</div>`;
   html += '<div class="star-check">';
   for (const [el, found] of Object.entries(r.star.found)) {
-    html += `<span class="star-tag ${found ? 'star-yes' : 'star-no'}">${el}: ${found ? '已覆盖' : '缺失'}</span>`;
+    html += `<span class="star-tag ${found ? 'star-yes' : 'star-no'}">${window.t('star.' + el)}: ${found ? window.t('resume.covered') : window.t('resume.missing')}</span>`;
   }
   html += '</div>';
   if (r.star.missing.length > 0) {
-    html += `<p class="hint" style="color:#e74c3c;">建议补充：${r.star.missing.map(m=>({S:'背景/情境',T:'任务目标',A:'具体行动',R:'量化结果'}[m])).join('、')}</p>`;
+    const names = r.star.missing.map(m => window.t('star.' + m)).join('、');
+    html += `<p class="hint" style="color:var(--danger);">${window.t('resume.suggestAdd')}${names}</p>`;
   }
 
   // 弱动词
   if (r.weakVerbs.length > 0) {
-    html += '<div class="section-title">弱动词替换建议</div>';
+    html += `<div class="section-title">${window.t('resume.weakTitle')}</div>`;
     r.weakVerbs.forEach(v => {
-      html += `<div class="verb-suggestion"><b>${v.weak}</b>（出现${v.count}次）→ 建议替换为：<span class="strong">${v.strong.join(' / ')}</span></div>`;
+      html += `<div class="verb-suggestion">${window.t('resume.weakLine', { weak: v.weak, count: v.count, strong: v.strong.join(' / ') })}</div>`;
     });
   } else {
-    html += '<div class="section-title">弱动词检测</div><p class="hint" style="color:#27ae60;">✓ 未发现典型弱动词</p>';
+    html += `<div class="section-title">${window.t('resume.weakCheckTitle')}</div><p class="hint" style="color:var(--success);">${window.t('resume.weakNone')}</p>`;
   }
 
   // 量化
   if (r.quant.needsQuant) {
-    html += '<div class="quant-warn">提示：描述了成果但缺少量化数据，建议补充数字。可参考以下模板：</div>';
+    html += `<div class="quant-warn">${window.t('resume.quantWarn')}</div>`;
     html += '<ul class="quant-templates">';
-    r.QUANT_TEMPLATES = window.ResumeOptimizer.QUANT_TEMPLATES;
-    window.ResumeOptimizer.QUANT_TEMPLATES.forEach(t => html += `<li>${t}</li>`);
+    window.t('resume.quantTemplates').forEach(tpl => { html += `<li>${tpl}</li>`; });
     html += '</ul>';
   } else if (r.quant.hasNumber) {
-    html += '<div class="section-title">量化检测</div><p class="hint" style="color:#27ae60;">✓ 已包含量化数据</p>';
+    html += `<div class="section-title">${window.t('resume.quantTitle')}</div><p class="hint" style="color:var(--success);">${window.t('resume.quantOk')}</p>`;
   }
 
   // ATS
   if (r.atsCheck) {
     const a = r.atsCheck;
-    html += `<div class="ats-box"><div>ATS 关键词覆盖：<span class="coverage-num">${a.coverage}%</span>（${a.coveredCount}/${a.jdKeywordCount}）</div>`;
+    html += `<div class="ats-box"><div>${window.t('resume.atsLine', { coverage: a.coverage, covered: a.coveredCount, total: a.jdKeywordCount })}</div>`;
     if (a.missing.length > 0) {
-      html += `<div style="margin-top:8px;font-size:12px;">建议在经历中体现：<b>${a.missing.join('、')}</b></div>`;
+      html += `<div style="margin-top:8px;font-size:12px;color:var(--text-2);">${window.t('resume.atsSuggest')}<b>${a.missing.join('、')}</b></div>`;
     }
     html += '</div>';
   }
 
   // 优化后版本
-  html += '<div class="section-title">一键优化后（弱动词已替换）</div>';
+  html += `<div class="section-title">${window.t('resume.optimizedTitle')}</div>`;
   html += `<div class="optimized-box"><pre>${r.optimized}</pre></div>`;
-  html += '<button class="btn ghost" onclick="navigator.clipboard.writeText(document.querySelector(\'.optimized-box pre\').innerText).then(()=>alert(\'已复制到剪贴板\'))">复制优化结果</button>';
+  html += `<div class="actions"><button class="btn ghost" id="btn-copy-optimized">${window.t('resume.copy')}</button></div>`;
 
   card.innerHTML = html;
+
+  document.getElementById('btn-copy-optimized').addEventListener('click', () => {
+    const text = document.querySelector('.optimized-box pre').innerText;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(
+        () => alert(window.t('resume.copied')),
+        () => alert(window.t('resume.copied'))
+      );
+    } else {
+      alert(window.t('resume.copied'));
+    }
+  });
 }
 
 // ==================== 评测集与评测 ====================
@@ -421,10 +466,10 @@ const EVAL_SET = [
   { jd: '大模型应用产品经理，深度理解LLM技术边界，能将业务问题转化为AI方案，跨部门沟通推动落地，建立评测指标。', core: ['A1','G1','A3','G4'] }
 ];
 
-document.getElementById('btn-run-eval').onclick = () => {
+function runEval() {
   const results = EVAL_SET.map(item => {
     const r = window.ScoringEngine.analyze(item.jd);
-    if (r.error) return null;
+    if (r.errorCode) return null;
     // 预测的核心项：评分 >= 3 的能力项
     const predicted = r.scores.filter(s => s.score >= 3).map(s => s.id);
     return { item, predicted, scores: r.scores };
@@ -432,7 +477,6 @@ document.getElementById('btn-run-eval').onclick = () => {
 
   // 计算召回率：预测命中的核心项 / 实际核心项
   let totalCore = 0, hitCore = 0;
-  // 计算一致率：预测分∈人工核心项±1... 简化为：核心项被预测命中的比例
   results.forEach(({ item, predicted }) => {
     item.core.forEach(c => {
       totalCore++;
@@ -452,17 +496,38 @@ document.getElementById('btn-run-eval').onclick = () => {
     if (missed.length > 0) badCases.push({ jd: item.jd.slice(0, 50), missed });
   });
 
+  const distText = Object.entries(scoreDist)
+    .map(([k, v]) => window.t('eval.distItem', { k, v }))
+    .join(' | ');
+  const badHtml = badCases.slice(0, 5).map(b =>
+    `<div class="gap-item">${window.t('eval.badLine', { jd: b.jd, ids: b.missed.join(',') })}</div>`
+  ).join('');
+
   const html = `
     <div class="eval-metrics">
-      <div class="eval-metric"><div class="num">${results.length}</div><div class="label">评测样本数</div></div>
-      <div class="eval-metric"><div class="num">${recall}%</div><div class="label">核心能力项召回率</div></div>
-      <div class="eval-metric"><div class="num">${badCases.length}</div><div class="label">存在漏判的样本</div></div>
+      <div class="eval-metric"><div class="num">${results.length}</div><div class="label">${window.t('eval.metricSamples')}</div></div>
+      <div class="eval-metric"><div class="num">${recall}%</div><div class="label">${window.t('eval.metricRecall')}</div></div>
+      <div class="eval-metric"><div class="num">${badCases.length}</div><div class="label">${window.t('eval.metricBad')}</div></div>
     </div>
-    <h3>评分分布</h3>
-    <p style="font-size:13px;">${Object.entries(scoreDist).map(([k,v])=>`${k}分: ${v}次`).join(' | ')}</p>
-    <h3>漏判样例（前5条）</h3>
-    ${badCases.slice(0,5).map(b=>`<div class="gap-item">JD: ${b.jd}… → 漏判: ${b.missed.join(',')}</div>`).join('') || '<p class="hint">无漏判</p>'}
-    <p class="hint" style="margin-top:16px;">注：召回率 = 模型识别出的核心能力项 / 人工标注的核心能力项。v1.5 接入 RAG 语义层后预期可提升同义改写场景的召回率。</p>
+    <h3 class="sub-heading">${window.t('eval.distribution')}</h3>
+    <p style="font-size:13px;color:var(--text-2);">${distText}</p>
+    <h3 class="sub-heading">${window.t('eval.badTitle')}</h3>
+    ${badHtml || `<p class="hint">${window.t('eval.noMiss')}</p>`}
+    <p class="hint" style="margin-top:16px;line-height:1.7;">${window.t('eval.footnote')}</p>
   `;
   document.getElementById('eval-result').innerHTML = html;
+}
+
+document.getElementById('btn-run-eval').onclick = () => {
+  evalRan = true;
+  runEval();
 };
+
+// ==================== 语言切换：只监听事件，重渲染动态区域 ====================
+document.addEventListener('languagechanged', () => {
+  renderAboutModel();
+  renderHistory();
+  if (lastScoringResult) renderScoringResult(lastScoringResult);
+  if (lastResumeResult) renderResumeResult(lastResumeResult);
+  if (evalRan) runEval();
+});
