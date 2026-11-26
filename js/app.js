@@ -31,17 +31,23 @@ function renderAboutModel() {
   const container = document.getElementById('about-model');
   const model = window.COMPETENCY_MODEL;
   const layerIds = ['general', 'business', 'ai'];
+  const isEn = window.getLang() === 'en';
   const kwLabel = window.t('about.keywords');
+  const colon = isEn ? ': ' : '：';
+  const joiner = isEn ? ', ' : '、';
+  const open = isEn ? '(' : '（';
+  const close = isEn ? ')' : '）';
   let html = '';
   for (const layerId of layerIds) {
     const comps = model.COMPETENCIES.filter(c => c.layer === layerId);
     const totalW = comps.reduce((s, c) => s + c.weight, 0);
     const layerName = window.t('about.layer.' + layerId);
-    html += `<div style="margin:14px 0;"><b style="color:var(--text);">${layerName}（${totalW}%）</b><ul style="margin:8px 0 0 20px;font-size:13px;color:var(--text-2);line-height:1.9;">`;
+    html += `<div style="margin:14px 0;"><b style="color:var(--text);">${layerName} ${open}${totalW}%${close}</b><ul style="margin:8px 0 0 20px;font-size:13px;color:var(--text-2);line-height:1.9;">`;
     comps.forEach(c => {
-      const name = window.getLang() === 'en' ? c.nameEn : c.name;
-      const kws = c.keywords.slice(0, 6).join('、') + (c.keywords.length > 6 ? '…' : '');
-      html += `<li><b style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">${c.id}</b> ${name}（${c.weight}%）— ${kwLabel}：${kws}</li>`;
+      const name = isEn ? c.nameEn : c.name;
+      const kwSource = isEn && c.keywordsEn ? c.keywordsEn : c.keywords;
+      const kws = kwSource.slice(0, 6).join(joiner) + (kwSource.length > 6 ? '…' : '');
+      html += `<li><b style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">${c.id}</b> ${name} ${open}${c.weight}%${close} — ${kwLabel}${colon}${kws}</li>`;
     });
     html += '</ul></div>';
   }

@@ -256,7 +256,7 @@
       'about.layer.general': 'General Product',
       'about.layer.business': 'Business & Domain',
       'about.layer.ai': 'AI-Specific',
-      'about.cnNote': 'Note: the v1 rule engine matches Chinese-language JDs, so the keyword dictionaries below are kept in Chinese as the matching corpus.',
+      'about.cnNote': 'Note: the v1 rule engine runs on a Chinese keyword corpus optimized for Chinese-language JDs. The English keywords above are reference translations for readability and are not used by the matching engine.',
 
       'warn.EDU_HIGH': 'This JD requires a {level} degree — verify your eligibility',
       'warn.MAJOR_UNCLEAR': 'A major preference is mentioned but not specified — verify before applying',
