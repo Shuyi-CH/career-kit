@@ -2,123 +2,124 @@
 
 > Read the JD. See the fit.
 
-一个面向 AI 产品经理求职者的**岗位 JD 匹配分析与简历优化工具**。粘贴一段 JD，得到 9 项能力维度的匹配度评分；粘贴简历经历，得到 STAR 完整性、弱动词、量化表达与 ATS 关键词覆盖的优化建议。
+A **job-description match analyzer and resume optimizer** for aspiring AI Product Managers. Paste a JD and get a 0–100 match score across 9 competency dimensions; paste your resume experience and get actionable feedback on STAR completeness, weak verbs, quantification, and ATS keyword coverage.
 
-**中文 / English 双语界面，一键切换；零后端、零 API Key，数据不离开浏览器。**
+**Bilingual UI (Chinese / English) with one-click switching. No backend, no API keys — your data never leaves the browser.**
 
-## 在线体验
+## Live demo
 
 👉 https://shuyi-ch.github.io/career-kit/
 
-无需注册，打开即用。所有分析在浏览器本地完成，历史记录仅存于 localStorage。
+No sign-up required. All analysis runs locally in the browser, and history is stored only in `localStorage`.
 
-## 功能
+## Features
 
-| 模块 | 做什么 |
+| Module | What it does |
 |---|---|
-| 岗位评分 | 解析 JD，输出 0–100 综合匹配度、9 项能力单项分、雷达图、强项/Gap 清单，以及学历、专业、年限、应届/社招四项硬门槛风险提示 |
-| 简历优化 | 支持 PDF / DOCX 本地解析或直接粘贴文本；检测 STAR 要素完整性、替换弱动词（如"负责"→"主导/统筹"）、补量化表达模板，并可对照目标 JD 计算 ATS 关键词覆盖率 |
-| 评测报告 | 内置 30 份公开 JD 测试集（人工标注 ground truth），一键运行召回率与评分分布评测，量化模型自身的能力边界 |
-| 关于模型 | 完整公开模型结构、权重、评分规则与路线图，评分过程可解释、可复核 |
+| Job Match | Parses a JD and produces a 0–100 overall match score, per-competency scores across 9 items, a radar chart, strength/gap lists, and risk flags for four hard thresholds: education, major, years of experience, and campus vs. experienced hiring |
+| Resume | Parses PDF / DOCX files locally or accepts pasted text; checks STAR completeness, replaces weak verbs (e.g. "responsible for" → "led / owned / drove"), suggests quantification templates, and computes ATS keyword coverage against an optional target JD |
+| Evaluation | Runs a built-in test set of 30 public JDs with human-labeled ground truth to measure recall and score distribution — quantifying the model's own limitations |
+| Model | Fully discloses the model structure, weights, scoring rules, and roadmap so every score is explainable and auditable |
 
-## 快速开始
+## Quick start
 
-本项目无构建步骤、无 npm 依赖，克隆后用任意静态服务器启动即可：
+There is no build step and no npm dependency. Clone the repo and serve it with any static file server:
 
 ```bash
 git clone https://github.com/Shuyi-CH/career-kit.git
 cd career-kit
 
-# 任选其一
+# either one works
 python -m http.server 8000
 npx serve .
 ```
 
-浏览器打开 `http://localhost:8000`。也可以直接双击 `index.html`，但推荐静态服务器方式（`file://` 协议下 PDF.js 的 Web Worker 可能被浏览器策略拦截）。
+Then open `http://localhost:8000`. Opening `index.html` directly via `file://` also works, but a static server is recommended because browser policies may block the PDF.js web worker on the `file://` protocol.
 
-## 项目结构
+## Project structure
 
 ```
 career-kit/
-├── index.html              # 单页应用，4 个 Tab
+├── index.html              # Single-page app, 4 tabs
 ├── css/
-│   └── style.css           # shadcn 风格设计令牌与全部样式
+│   └── style.css           # shadcn-style design tokens and all styles
 └── js/
-    ├── i18n.js             # 中英双语字典与语言切换（localStorage 持久化）
-    ├── competency-model.js # 胜任力模型（单一真相源，冻结版，含中英展示名）
-    ├── scoring-engine.js   # 规则评分引擎（严格依赖模型定义，不硬编码能力项）
-    ├── resume-optimizer.js # STAR 检测 / 弱动词 / 量化建议 / ATS 覆盖
-    └── app.js              # UI 交互、Canvas 雷达图、文件解析、评测集
+    ├── i18n.js             # ZH/EN dictionaries and language switcher (persisted in localStorage)
+    ├── competency-model.js # Competency model (single source of truth, frozen; bilingual display names)
+    ├── scoring-engine.js   # Rule-based scoring engine (depends strictly on the model, no hardcoded items)
+    ├── resume-optimizer.js # STAR check / weak verbs / quantification / ATS coverage
+    └── app.js              # UI logic, canvas radar chart, file parsing, evaluation set
 ```
 
-## 技术架构与隐私
+## Architecture & privacy
 
-- **原生 HTML / CSS / JavaScript**，无框架、无打包，五个 JS 文件按依赖顺序直接挂载
-- **自研单页 i18n**：静态文案走 `data-i18n` 属性，动态文案统一走 `t()` 字典函数，引擎只返回语言中立的错误/警告 code，不耦合任何界面文案
-- **PDF.js 3.11.174**（PDF 文本提取）与 **mammoth.js 1.6.0**（DOCX 文本提取）经 CDN 引入，解析全部在本地完成
-- 分析历史与语言偏好使用 `localStorage` 持久化，不存在任何网络上报
-- 不收集、不上传任何 JD 或简历内容；清空浏览器数据即彻底删除
+- **Vanilla HTML / CSS / JavaScript** — no framework, no bundler; five JS files loaded in dependency order
+- **Homegrown single-page i18n**: static copy is marked with `data-i18n` attributes, dynamic copy goes through a `t()` dictionary function, and the engines return language-neutral error/warning codes instead of UI strings
+- **PDF.js 3.11.174** (PDF text extraction) and **mammoth.js 1.6.0** (DOCX text extraction) are loaded via CDN; all parsing happens on-device
+- Analysis history and language preference are persisted in `localStorage` with zero network reporting
+- No JD or resume content is ever collected or uploaded — clearing browser data deletes everything
 
-## 评分模型
+## Scoring model
 
-### 数据来源
+### Sources
 
-模型基于两份公开资料交叉构建：
+The model is built from two public references:
 
-1. 人人都是产品经理《54 份头部企业 AI PM JD 分析》（覆盖字节、腾讯、蚂蚁、OpenAI、Anthropic 等 14 家企业）
-2. TripAdvisor 前产品 VP Ravi Mehta 的产品胜任力框架（12 项 MECE 能力项）
+1. Woshipm.com, *"Analysis of 54 AI PM JDs from leading companies"* — 14 companies including ByteDance, Tencent, Ant Group, OpenAI, and Anthropic; 5 general capability dimensions and 6 AI-specific capabilities
+2. The TripAdvisor Product Competency Framework by Ravi Mehta — a widely adopted 12-item MECE framework
 
-### 模型结构：3 层 9 项，权重合计 100
+### Model structure: 9 items in 3 layers, weights summing to 100
 
-| 层级 | ID | 能力项 | 权重 |
+| Layer | ID | Competency | Weight |
 |---|---|---|---|
-| 通用产品层（40%） | G1 | 需求洞察与业务抽象 | 12 |
-| | G2 | 产品设计与体验交付 | 10 |
-| | G3 | 数据驱动决策 | 9 |
-| | G4 | 沟通协作与项目推进 | 9 |
-| 商业与行业层（18%） | B1 | 行业业务理解与场景建模 | 10 |
-| | B2 | 商业结果与价值导向 | 8 |
-| AI 专属层（42%） | A1 | AI 技术理解与架构认知 | 14 |
-| | A2 | Prompt / Context 工程与模型对齐 | 14 |
-| | A3 | 评测实验与 AI 工具实操 | 14 |
+| General Product (40%) | G1 | User Insight & Problem Abstraction | 12 |
+| | G2 | Product Design & Delivery | 10 |
+| | G3 | Data-driven Decision Making | 9 |
+| | G4 | Collaboration & Project Execution | 9 |
+| Business & Domain (18%) | B1 | Domain Understanding & Scenario Modeling | 10 |
+| | B2 | Business Impact & Value Orientation | 8 |
+| AI-Specific (42%) | A1 | AI Technical & Architecture Literacy | 14 |
+| | A2 | Prompt/Context Engineering & Alignment | 14 |
+| | A3 | Evaluation & AI Tooling | 14 |
 
-另有**硬门槛模块**（学历、专业、工作年限、应届/社招），不计入加权分，仅做通过/风险提示——避免把"硕士要求"这类筛选条件与能力评分混为一谈。
+A separate **hard-threshold module** (education, major, years of experience, campus/social hiring) is kept out of the weighted score and only surfaces pass/risk flags — so screening criteria such as "Master's degree required" are never conflated with competency scoring.
 
-### 单项评分规则
+### Per-item scoring rule
 
-每项能力采用「关键词命中数 + 强度词」两级判定：
+Each item uses a two-level rule combining keyword hits and intensity words:
 
-| 命中关键词数 | 无强度词 | 伴随"主导/深度/从0到1"等强度词 |
+| Keywords matched | No intensity word | With intensity words ("led", "end-to-end", "0-to-1", etc.) |
 |---|---|---|
 | 0 | 1 | 1 |
 | 1 | 2 | 3 |
 | 2 | 3 | 4 |
 | ≥ 3 | 4 | 5 |
 
-单项 1–5 分乘以权重加权求和，归一化为 0–100 综合匹配度。全部规则以数据结构定义在 `competency-model.js`，引擎不包含任何硬编码能力项。
+Item scores (1–5) are weighted and normalized into a 0–100 overall match. All rules are defined as data structures in `competency-model.js`; the engine contains no hardcoded competency items.
 
-## 评测基线与已知局限
+## Evaluation baseline & known limitations
 
-30 份公开 JD 测试集、人工标注核心能力项作为 ground truth，当前规则引擎（v1）基线：
+On the 30-JD test set with human-labeled core competencies as ground truth, the current rule engine (v1) achieves:
 
-- **核心能力项召回率 57%**，30 份样本中 26 份存在不同程度漏判
-- 漏判主因：关键词匹配无法理解同义改写（如 JD 写"撬动客户资源"而词表只有"用户调研"）
+- **57% core-competency recall** — 26 of the 30 samples contain at least one missed item
+- Main cause of misses: keyword matching cannot understand paraphrasing (e.g. a JD says "leveraged customer resources" while the dictionary only contains "user research")
 
-这一数字被**有意保留为基线**而非掩盖，v1.5 将引入语义检索层并做 A/B 对比，用同一测试集验证召回率的真实提升。
+This number is **deliberately kept as a visible baseline** rather than hidden. v1.5 adds a semantic retrieval layer and will run an A/B comparison on the same test set to demonstrate real recall improvement.
 
-其他已知边界：
+Other known boundaries:
 
-- JD 短于 30 字不触发分析，避免碎片文本产生误导性评分
-- 仅支持 `.pdf` / `.docx`；旧版 `.doc` 不在 mammoth.js 支持范围内
-- 扫描件、手机拍照生成的图片型 PDF 没有文本层，任何文本提取工具都无法直接读取（v2 计划支持本地 OCR）
-- 评分是求职准备的**参考信号**，不是录用概率预测
+- JDs shorter than 30 characters are rejected to prevent misleading scores on fragmentary text
+- Only `.pdf` / `.docx` are supported; legacy `.doc` is outside mammoth.js's support range
+- Scanned or phone-photo PDFs have no text layer and cannot be read by any text-extraction tool (local OCR is planned for v2)
+- Scores are a **reference signal** for job-search preparation, not a prediction of hiring probability
+- The v1 engine matches Chinese-language JDs; the English keyword lists in the Model tab are reference translations for readability and are not used by the matching engine
 
-## 路线图
+## Roadmap
 
-- **v1（当前）**：规则引擎评分 + 简历优化 + 30 份 JD 评测基线
-- **v1.5**：接入 Transformers.js 浏览器端 embedding（`Xenova/paraphrase-multilingual-MiniLM-L12-v2`，约 120MB 本地模型），构建 RAG 语义检索层处理同义改写，在同一测试集上对比召回率提升
-- **v2**：Tesseract.js 本地 OCR（扫描件/图片型 PDF）；接入 LLM 实现简历自由改写与自由格式 JD 语义理解
+- **v1 (current):** rule-engine scoring, resume optimization, 30-JD evaluation baseline
+- **v1.5:** in-browser embeddings via Transformers.js (`Xenova/paraphrase-multilingual-MiniLM-L12-v2`, ~120 MB local model) powering a RAG semantic retrieval layer for paraphrased wording, with A/B recall comparison on the same test set
+- **v2:** local OCR for scanned/image PDFs via Tesseract.js; LLM-powered free-form resume rewriting and JD understanding
 
-## 说明
+## Disclaimer
 
-本项目是个人产品/技术能力练习作品，模型与评分规则仅供求职参考，不代表任何企业的真实招聘标准。
+This is a personal product/engineering practice project. The model and scoring rules are provided for job-search reference only and do not represent the actual hiring criteria of any company.
