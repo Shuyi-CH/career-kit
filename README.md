@@ -6,11 +6,31 @@ A **job-description match analyzer and resume optimizer** for aspiring AI Produc
 
 **Bilingual UI (Chinese / English) with one-click switching. No backend, no API keys — your data never leaves the browser.**
 
+[![CI](https://github.com/Shuyi-CH/career-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/Shuyi-CH/career-kit/actions/workflows/ci.yml)
+
 ## Live demo
 
 👉 https://shuyi-ch.github.io/career-kit/
 
 No sign-up required. All analysis runs locally in the browser, and history is stored only in `localStorage`.
+
+## Product tour
+
+**Job Match** — overall 0–100 score, hard-threshold risk flags, and a 9-axis competency radar:
+
+![Job Match results](assets/screenshots/job-match.jpg)
+
+**Resume** — STAR completeness, weak-verb replacements, and quantification templates:
+
+![Resume optimization](assets/screenshots/resume.jpg)
+
+**Evaluation** — the 30-JD test set run, with the 57% recall baseline kept fully visible:
+
+![Evaluation report](assets/screenshots/evaluation.jpg)
+
+**Model** — every competency, weight, and keyword corpus disclosed for auditing:
+
+![Competency model](assets/screenshots/model.jpg)
 
 ## Features
 
@@ -36,11 +56,26 @@ npx serve .
 
 Then open `http://localhost:8000`. Opening `index.html` directly via `file://` also works, but a static server is recommended because browser policies may block the PDF.js web worker on the `file://` protocol.
 
+## Tests
+
+The scoring engine, resume optimizer, and model invariants are covered by 13 zero-dependency tests on Node's built-in test runner:
+
+```bash
+npm test          # equivalent to: node --test
+```
+
 ## Project structure
 
 ```
 career-kit/
 ├── index.html              # Single-page app, 4 tabs
+├── favicon.svg             # Brand icon (lens mark)
+├── package.json            # Test script metadata; no runtime dependencies
+├── .github/workflows/
+│   └── ci.yml              # GitHub Actions: node --test on every push/PR
+├── assets/
+│   ├── og-cover.png        # Social share card (1200×630)
+│   └── screenshots/        # Product tour images used in this README
 ├── css/
 │   └── style.css           # shadcn-style design tokens and all styles
 └── js/
@@ -50,6 +85,8 @@ career-kit/
     ├── resume-optimizer.js # STAR check / weak verbs / quantification / ATS coverage
     └── app.js              # UI logic, canvas radar chart, file parsing, evaluation set
 ```
+
+Tests live in `tests/engine.test.js`, which loads the same browser scripts as the app — no duplicated logic, no mocks of the engine.
 
 ## Architecture & privacy
 
